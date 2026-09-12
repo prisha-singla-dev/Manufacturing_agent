@@ -13,4 +13,4 @@ frontend/.env.local
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
+Thumbs.dbbackend/.env
