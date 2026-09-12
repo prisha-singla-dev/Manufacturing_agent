@@ -5,7 +5,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.postgres import PostgresSaver
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, ToolMessage
 
 from .db import get_schema_description
 from .tools import ALL_TOOLS, RespondToUser
@@ -86,11 +86,25 @@ def build_graph(database_url: str):
         return "tools"
 
     def finalize_node(state: AgentState):
+        # Every tool_call in the last AI message MUST get a matching
+        # ToolMessage, or the next turn's OpenAI call fails with a
+        # dangling-tool-call error. This includes RespondToUser itself
+        # (which isn't a "real" tool — we just need to close it out) and
+        # defensively covers the rare case where the model bundles another
+        # tool call alongside RespondToUser in the same turn.
         last = state["messages"][-1]
+        final = None
+        tool_messages = []
         for call in last.tool_calls:
             if call["name"] == "RespondToUser":
-                return {"final": call["args"]}
-        return {}
+                final = call["args"]
+                tool_messages.append(ToolMessage(content="Delivered to user.", tool_call_id=call["id"]))
+            else:
+                tool_messages.append(ToolMessage(
+                    content="Skipped: call other tools before RespondToUser, not in the same turn.",
+                    tool_call_id=call["id"],
+                ))
+        return {"final": final, "messages": tool_messages}
 
     graph = StateGraph(AgentState)
     graph.add_node("agent", agent_node)
