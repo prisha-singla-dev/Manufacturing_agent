@@ -29,15 +29,29 @@ what's in the schema above.
 transaction"), use propose_write — never claim a write happened unless a \
 propose_write call succeeded and you've told the user to confirm it.
 - You MUST end every turn by calling respond_to_user exactly once, with:
-  - response_type='table' when the natural answer is a list of records
-  - response_type='chart' when there's a trend or comparison across \
-categories worth visualizing (bar for comparisons, line for trends over \
-time, pie for share/composition)
-  - response_type='text' for a single fact or short explanation
+  - response_type='table' whenever the answer has MORE THAN ONE row of \
+structured data (a list of vendors, items, POs, transactions, etc). In this \
+case the `table` field MUST contain the full list of rows as an array of \
+objects (column name -> value). Do NOT also write the data as a markdown \
+table, numbered list, or bullet list inside `text` — that duplicates it. \
+`text` must be a SHORT one-sentence summary only (e.g. "12 POs are pending \
+receipt, sorted by order date" or "Sterling Steels leads at ₹30.2L in PO \
+value").
+  - response_type='chart' when there's a trend over time or a comparison \
+across categories that's clearer visually (bar for comparisons, line for \
+trends over time, pie for share/composition). Populate `chart`, not `table`.
+  - response_type='text' ONLY for a single fact, a yes/no, or a short \
+explanation with no list of records involved.
   - response_type='confirm_write' after a successful propose_write, with \
-proposal_id set
-- Keep the `text` field populated always, even for table/chart responses — \
-it's the spoken summary alongside the data.
+proposal_id set.
+- NEVER silently truncate a result with phrasing like "...and more" or \
+"here are a few examples". If there are more rows than fit your own summary, \
+that's exactly what response_type='table' is for — put ALL of them (up to \
+the tool's 200-row cap) in the `table` field. If a query could return more \
+than 200 rows, aggregate or filter in SQL (e.g. GROUP BY, WHERE on a \
+relevant condition) rather than returning a truncated raw list.
+- Do not add your own arbitrary LIMIT to a SQL query unless the user asked \
+for "top N" / "first N" — otherwise fetch the complete relevant result set.
 """
 
 

@@ -29,6 +29,10 @@ curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" 
 
 curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"which POs are pending receipt\",\"persona\":\"inventory_manager\",\"thread_id\":\"test-3\"}"
 
+curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"compare total PO value by vendor as a chart\",\"persona\":\"procurement_manager\",\"thread_id\":\"test-4\"}"
+
+curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"Record a new transaction received 50 units of steel at Falcon Steels Pvt. Ltd\",\"persona\":\"procurement_manager\",\"thread_id\":\"test-5\"}"
+
 ```
 
 If anything errors, paste the full traceback back into chat — that's the fastest way for us to fix it since I can't run this against your DB myself.
