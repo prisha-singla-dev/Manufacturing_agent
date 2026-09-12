@@ -1,3 +1,4 @@
+import re
 import uuid
 from typing import Optional
 from langchain_core.tools import tool
@@ -9,6 +10,13 @@ from .db import pool, BUSINESS_TABLES, WRITABLE_TABLES
 # Fine for a single-process dev/demo deployment; swap for Redis/DB if this
 # ever runs multi-worker or needs to survive restarts.
 PENDING_WRITES: dict[str, dict] = {}
+
+
+def _insert_columns(sql: str) -> list[str] | None:
+    m = re.search(r"insert\s+into\s+\w+\s*\(([^)]*)\)", sql, re.IGNORECASE)
+    if not m:
+        return None
+    return [c.strip().strip('"').lower() for c in m.group(1).split(",")]
 
 
 def _is_safe_select(sql: str) -> bool:
@@ -27,7 +35,7 @@ def run_sql_read(query: str) -> str:
     """Run a read-only SELECT query against the manufacturing DB and return
     the results. Only SELECT statements are allowed. Always reference the
     real table/column names from the schema you were given. Results are
-    capped at 200 rows - aggregate or filter in SQL rather than relying on
+    capped at 200 rows — aggregate or filter in SQL rather than relying on
     LIMIT-less full scans."""
     if not _is_safe_select(query):
         return "ERROR: only single SELECT statements are allowed."
@@ -47,7 +55,7 @@ def run_sql_read(query: str) -> str:
 @tool
 def propose_write(sql: str, explanation: str) -> str:
     """Propose a write (INSERT or UPDATE only) to the database. This does
-    NOT execute the write - it stores the proposal and returns a
+    NOT execute the write — it stores the proposal and returns a
     proposal_id. The user must explicitly confirm via a separate step
     before it runs. Only use this for tables the user is clearly asking to
     modify (e.g. recording a new transaction or PO). Never propose
@@ -59,6 +67,16 @@ def propose_write(sql: str, explanation: str) -> str:
         return "ERROR: statement contains a disallowed keyword."
     if not any(t in s for t in WRITABLE_TABLES):
         return f"ERROR: target table must be one of {WRITABLE_TABLES}."
+
+    if s.startswith("insert"):
+        cols = _insert_columns(sql)
+        if cols is not None and "id" not in cols:
+            return (
+                "ERROR: this table's `id` column has no database-side default "
+                "(unlike `users`/`refresh_tokens`) — you must generate and "
+                "include it explicitly. Retry the INSERT with `id` as the "
+                "first column and `gen_random_uuid()::text` as its value."
+            )
 
     proposal_id = str(uuid.uuid4())
     PENDING_WRITES[proposal_id] = {"sql": sql, "explanation": explanation}
@@ -75,7 +93,7 @@ class ChartSpec(BaseModel):
 class RespondToUser(BaseModel):
     """Call this LAST, once you have everything you need, to deliver the
     final answer to the user. Always call this exactly once to end the turn
-    - never end the turn without calling it."""
+    — never end the turn without calling it."""
     response_type: str = Field(description="'text' | 'table' | 'chart' | 'confirm_write'")
     text: str = Field(description="Natural-language answer, always populated.")
     table: Optional[list[dict]] = Field(default=None, description="Rows for response_type='table'.")

@@ -1,14 +1,29 @@
 import os
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).with_name(".env"))
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=5, kwargs={"row_factory": dict_row})
+# Shared pool for regular queries AND the LangGraph checkpointer (see
+# agent.py) — one pool, not two separate connections, so both benefit from
+# the same health-checking instead of the checkpointer holding one raw
+# connection open for the app's entire lifetime (which is what silently
+# died against Railway's proxy after an idle period).
+pool = ConnectionPool(
+    DATABASE_URL,
+    min_size=1,
+    max_size=8,
+    kwargs={"row_factory": dict_row},
+    check=ConnectionPool.check_connection,
+)
 
 # Tables the agent is allowed to know about / query. Deliberately excludes
 # LangGraph's internal persistence tables (checkpoint_*, alembic_version) and
-# auth internals (refresh_tokens, password_hash) - those aren't business data.
+# auth internals (refresh_tokens, password_hash) — those aren't business data.
 BUSINESS_TABLES = [
     "inv_categories",
     "inv_current_stock",
@@ -29,7 +44,7 @@ BUSINESS_TABLES = [
 ]
 
 # Tables the write tool is allowed to touch, and only via INSERT/UPDATE
-# (never DELETE/DROP/TRUNCATE - enforced in tools.py regardless of this list).
+# (never DELETE/DROP/TRUNCATE — enforced in tools.py regardless of this list).
 WRITABLE_TABLES = [
     "inv_transactions",
     "proc_purchase_orders",

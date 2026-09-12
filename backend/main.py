@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from openai import BadRequestError
 
 load_dotenv(Path(__file__).with_name(".env"))
 
@@ -12,17 +13,13 @@ from .agent import build_graph
 from .tools import PENDING_WRITES
 from .db import pool
 
-DATABASE_URL = os.environ["DATABASE_URL"]
-
 state = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    graph, checkpointer_cm = build_graph(DATABASE_URL)
-    state["graph"] = graph
+    state["graph"] = build_graph()
     yield
-    checkpointer_cm.__exit__(None, None, None)
     pool.close()
 
 
@@ -54,13 +51,26 @@ class ChatResponse(BaseModel):
 async def chat(req: ChatRequest):
     graph = state["graph"]
     config = {"configurable": {"thread_id": req.thread_id}}
-    result = graph.invoke(
-        {"messages": [{"role": "user", "content": req.message}], "persona": req.persona, "final": None},
-        config=config,
-    )
+    try:
+        result = graph.invoke(
+            {"messages": [{"role": "user", "content": req.message}], "persona": req.persona, "final": None},
+            config=config,
+        )
+    except BadRequestError as e:
+        # This specific error means the thread's checkpointed history has an
+        # AI message with a tool call that never got a matching response —
+        # almost always caused by a connection drop mid-write in a past
+        # turn, not something a retry of *this* turn can fix. The thread's
+        # history is permanently in a bad state; only a fresh thread_id
+        # recovers (the UI's "New chat" button does exactly that).
+        print(f"[chat] thread {req.thread_id} appears corrupted (dangling tool_call): {e}")
+        return ChatResponse(
+            response_type="text",
+            text="This conversation hit an internal error and can't continue. Please click \"New chat\" to start fresh — your other conversations aren't affected.",
+        )
     final = result.get("final")
     if not final:
-        # Agent didn't call RespondToUser (shouldn't normally happen) - fall
+        # Agent didn't call RespondToUser (shouldn't normally happen) — fall
         # back to its last text so the user isn't left with nothing.
         last = result["messages"][-1]
         return ChatResponse(response_type="text", text=getattr(last, "content", "Sorry, I couldn't complete that."))
@@ -79,6 +89,7 @@ async def confirm_write(proposal_id: str):
         del PENDING_WRITES[proposal_id]
         return {"status": "executed", "explanation": proposal["explanation"]}
     except Exception as e:
+        print(f"[confirm-write] FAILED for proposal {proposal_id}\n  sql={proposal['sql']}\n  error={e}")
         raise HTTPException(400, f"Write failed: {e}")
 
 
