@@ -47,6 +47,11 @@ class ChatResponse(BaseModel):
     proposal_id: str | None = None
 
 
+def _looks_like_markdown_table(text: str) -> bool:
+    t = (text or "").lower()
+    return t.count("\n|") > 1 or "|---" in t or t.count("\n-") > 3 or t.count("\n1.") > 0
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     graph = state["graph"]
@@ -74,6 +79,28 @@ async def chat(req: ChatRequest):
         # back to its last text so the user isn't left with nothing.
         last = result["messages"][-1]
         return ChatResponse(response_type="text", text=getattr(last, "content", "Sorry, I couldn't complete that."))
+
+    # Known LLM non-determinism: even with an explicit prompt rule, the model
+    # occasionally reverts to stuffing a markdown table into `text` instead
+    # of using response_type='table'. Rather than chase this further in the
+    # prompt (diminishing returns against genuine non-determinism), give it
+    # one corrective retry in the same thread before returning to the user.
+    if final.get("response_type") == "text" and _looks_like_markdown_table(final.get("text", "")):
+        print(f"[chat] thread {req.thread_id} produced markdown-in-text, retrying once")
+        correction = {
+            "role": "user",
+            "content": (
+                "Your last answer put tabular data into a text response. "
+                "Re-answer the same question using response_type='table' "
+                "with the full rows in `table`, and a one-sentence summary "
+                "in `text` only."
+            ),
+        }
+        retry_result = graph.invoke(
+            {"messages": [correction], "persona": req.persona, "final": None}, config=config
+        )
+        final = retry_result.get("final") or final
+
     return ChatResponse(**final)
 
 

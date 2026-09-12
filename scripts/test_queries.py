@@ -1,8 +1,7 @@
 """
 Runs the full test-case matrix against a running backend (localhost:8000 by
-default) and flags anomalies automatically - including regressions of the
-two bugs already found (markdown-in-text instead of structured table/chart,
-and duplicate/fan-out rows).
+default), flags anomalies automatically, and always prints a content
+preview so nothing needs a follow-up curl to inspect.
 
 Setup:
     pip install requests
@@ -13,11 +12,10 @@ Run (backend must already be running):
 
 import requests
 import uuid
-import json
 
 BASE_URL = "http://localhost:8000"
 
-# (persona, question, expected_type) - expected_type is a hint for the
+# (persona, question, expected_type) — expected_type is a hint for the
 # report, not a hard assertion, since the agent can reasonably choose
 # text vs table for borderline cases.
 TEST_CASES = [
@@ -42,21 +40,17 @@ def check_anomalies(resp: dict) -> list[str]:
     text = (resp.get("text") or "").lower()
     rtype = resp.get("response_type")
 
-    # Regression check: markdown table stuffed into `text`
     if rtype == "text" and ("|---" in text or text.count("\n|") > 1 or text.count("\n1.") > 0):
         issues.append("possible markdown/list-in-text regression (should be response_type=table)")
 
-    # Regression check: silent truncation language
     if any(p in text for p in TRUNCATION_PHRASES):
         issues.append(f"possible silent truncation language in text: {text[:80]!r}")
 
-    # table/chart declared but empty
     if rtype == "table" and not resp.get("table"):
         issues.append("response_type=table but table field is empty/null")
     if rtype == "chart" and not resp.get("chart"):
         issues.append("response_type=chart but chart field is empty/null")
 
-    # Duplicate-row check (the fan-out bug found earlier)
     if rtype == "table" and resp.get("table"):
         rows = resp["table"]
         if rows and "id" in rows[0]:
@@ -65,6 +59,19 @@ def check_anomalies(resp: dict) -> list[str]:
                 issues.append(f"duplicate rows detected by id ({len(ids)} rows, {len(set(ids))} unique ids)")
 
     return issues
+
+
+def preview(resp: dict) -> str:
+    rtype = resp.get("response_type")
+    text_snip = (resp.get("text") or "")[:150]
+    if rtype == "table" and resp.get("table"):
+        n = len(resp["table"])
+        cols = list(resp["table"][0].keys()) if n else []
+        return f'text="{text_snip}" | table: {n} rows, columns={cols}'
+    if rtype == "chart" and resp.get("chart"):
+        n = len(resp["chart"].get("data", []))
+        return f'text="{text_snip}" | chart: {resp["chart"].get("chart_type")}, {n} points'
+    return f'text="{text_snip}"'
 
 
 def main():
@@ -80,7 +87,7 @@ def main():
             r.raise_for_status()
             data = r.json()
             issues = check_anomalies(data)
-            results.append((persona, question, expected, data["response_type"], issues, None))
+            results.append((persona, question, expected, data, issues, None))
         except Exception as e:
             results.append((persona, question, expected, None, [], str(e)))
 
@@ -88,13 +95,14 @@ def main():
     print("TEST RESULTS")
     print("=" * 70)
     clean, flagged, errored = 0, 0, 0
-    for persona, question, expected, actual_type, issues, error in results:
+    for persona, question, expected, data, issues, error in results:
         print(f"\n[{persona}] {question}")
         if error:
             print(f"  ERROR: {error}")
             errored += 1
             continue
-        print(f"  expected~{expected} | got={actual_type}")
+        print(f"  expected~{expected} | got={data['response_type']}")
+        print(f"  {preview(data)}")
         if issues:
             flagged += 1
             for issue in issues:

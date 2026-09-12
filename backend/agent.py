@@ -32,6 +32,10 @@ propose_write call succeeded and you've told the user to confirm it.
 (unlike `users`) — you must always include `id` explicitly in the column \
 list with `gen_random_uuid()::text` as its value, or the write will fail a \
 not-null constraint.
+- If run_sql_read returns an ERROR, read the message and retry with \
+corrected SQL (e.g. a wrong column name) — try at least twice before telling \
+the user you couldn't retrieve something. Never apologize and give up after \
+a single failed query without attempting a fix.
 - You MUST end every turn by calling respond_to_user exactly once, with:
   - response_type='table' whenever the answer has MORE THAN ONE row of \
 structured data (a list of vendors, items, POs, transactions, etc). In this \
