@@ -15,6 +15,7 @@ from .db import pool
 
 state = {}
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     state["graph"] = build_graph()
@@ -24,9 +25,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Comma-separated list, e.g. "http://localhost:3000,https://your-app.vercel.app"
+# Set ALLOWED_ORIGINS on the deployed backend once you have the Vercel URL.
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,12 +84,13 @@ async def chat(req: ChatRequest):
         return ChatResponse(response_type="text", text=getattr(last, "content", "Sorry, I couldn't complete that."))
 
     # Known LLM non-determinism: even with an explicit prompt rule, the model
-    # occasionally reverts to stuffing a markdown table into `text` instead
-    # of using response_type='table'. Rather than chase this further in the
-    # prompt (diminishing returns against genuine non-determinism), give it
-    # one corrective retry in the same thread before returning to the user.
-    if final.get("response_type") == "text" and _looks_like_markdown_table(final.get("text", "")):
-        print(f"[chat] thread {req.thread_id} produced markdown-in-text, retrying once")
+    # occasionally reverts to stuffing tabular data into `text` instead of
+    # using response_type='table'. One retry only halves the odds of hitting
+    # it again; two independent retries make it unlikely enough to accept.
+    attempts = 0
+    while final.get("response_type") == "text" and _looks_like_markdown_table(final.get("text", "")) and attempts < 2:
+        attempts += 1
+        print(f"[chat] thread {req.thread_id} produced markdown-in-text, retry {attempts}/2")
         correction = {
             "role": "user",
             "content": (
