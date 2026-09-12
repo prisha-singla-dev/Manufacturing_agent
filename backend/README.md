@@ -24,6 +24,11 @@ curl.exe http://localhost:8000/health
 
 ```bash
 curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"Which items are below their min stock level?\",\"persona\":\"inventory_manager\",\"thread_id\":\"test-1\"}"
+
+curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"show vendor-wise PO value\",\"persona\":\"inventory_manager\",\"thread_id\":\"test-2\"}"
+
+curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"which POs are pending receipt\",\"persona\":\"inventory_manager\",\"thread_id\":\"test-3\"}"
+
 ```
 
 If anything errors, paste the full traceback back into chat — that's the fastest way for us to fix it since I can't run this against your DB myself.
