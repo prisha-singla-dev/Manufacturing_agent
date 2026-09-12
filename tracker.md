@@ -24,18 +24,9 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ⏭️ skipped
 - ✅ Reuses existing `checkpoints` tables for persistence
 - ✅ Chart/table response-typing bug — found, fixed, verified
 - ✅ Multi-turn dangling-tool-call bug — found, fixed, verified (5 real queries)
-- ✅ Write-back null-id bug — found (INSERT omitted `id`, which has no DB
-  default on these tables), fixed at both the tool level (propose_write now
-  rejects an INSERT missing `id` with an actionable error) and the prompt
-  level. **Verified — write executed successfully end-to-end via the UI.**
-- ✅ Connection-drop bug — a long-lived single checkpointer connection died
-  against Railway's proxy (`SSL SYSCALL error: EOF detected`), corrupting
-  that thread's history. Fixed by sharing the health-checked connection pool
-  between the checkpointer and the SQL tool. Added a graceful fallback for
-  any future corrupted-thread error (clear message + "New chat" prompt
-  instead of a raw 500).
-- ✅ LangSmith tracing confirmed visually — full waterfall (agent → tool
-  calls → route → final) visible per request, including exact SQL run
+- ✅ Write-back null-id bug — found (INSERT omitted `id`, which has no DB default on these tables), fixed at both the tool level (propose_write now rejects an INSERT missing `id` with an actionable error) and the prompt level. **Verified — write executed successfully end-to-end via the UI.**
+- ✅ Connection-drop bug — a long-lived single checkpointer connection died against Railway's proxy (`SSL SYSCALL error: EOF detected`), corrupting that thread's history. Fixed by sharing the health-checked connection pool between the checkpointer and the SQL tool. Added a graceful fallback for any future corrupted-thread error (clear message + "New chat" prompt instead of a raw 500).
+- ✅ LangSmith tracing confirmed visually — full waterfall (agent → tool calls → route → final) visible per request, including exact SQL run
 
 ## Phase 3 — Response typing + write-back tool
 - ✅ Structured response schema — implemented and verified
