@@ -3,6 +3,7 @@ venv/
 __pycache__/
 *.pyc
 .env
+backend/.env
 
 # Node / Next.js
 node_modules/
@@ -13,4 +14,4 @@ frontend/.env.local
 .vscode/
 .idea/
 .DS_Store
-Thumbs.dbbackend/.env
+Thumbs.db
