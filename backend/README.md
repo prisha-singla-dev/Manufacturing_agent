@@ -3,9 +3,9 @@
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate        # Windows (you're on Windows per the earlier path)
+venv\Scripts\activate        
 pip install -r requirements.txt
-copy .env.example .env       # then fill in DATABASE_URL, OPENAI_API_KEY, LANGSMITH_API_KEY
+copy .env.example .env      
 uvicorn backend.main:app --reload --port 8000 --app-dir ..
 
 # else
@@ -18,16 +18,15 @@ Test it without a frontend first:
 
 Test the server
 Health check - 
-```
+```bash
 curl.exe http://localhost:8000/health
 ```
 
 ```bash
-curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\": \"Which items are below their min stock level?\", \"persona\": \"inventory_manager\", \"thread_id\": \"test-1\"}"
+curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d "{\"message\":\"Which items are below their min stock level?\",\"persona\":\"inventory_manager\",\"thread_id\":\"test-1\"}"
 ```
 
-If anything errors, paste the full traceback back into chat — that's the
-fastest way for us to fix it since I can't run this against your DB myself.
+If anything errors, paste the full traceback back into chat — that's the fastest way for us to fix it since I can't run this against your DB myself.
 
 ## Notes
 - `thread_id` should be a stable per-conversation id (e.g. a UUID generated
