@@ -60,7 +60,7 @@ async def chat(req: ChatRequest):
     )
     final = result.get("final")
     if not final:
-        # Agent didn't call RespondToUser (shouldn't normally happen) — fall
+        # Agent didn't call RespondToUser (shouldn't normally happen) - fall
         # back to its last text so the user isn't left with nothing.
         last = result["messages"][-1]
         return ChatResponse(response_type="text", text=getattr(last, "content", "Sorry, I couldn't complete that."))

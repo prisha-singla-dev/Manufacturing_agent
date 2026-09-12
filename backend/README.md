@@ -1,4 +1,4 @@
-# Backend — run locally
+# Backend - run locally
 
 ```bash
 cd backend
@@ -35,13 +35,13 @@ curl.exe -X POST http://localhost:8000/chat -H "Content-Type: application/json" 
 
 ```
 
-If anything errors, paste the full traceback back into chat — that's the fastest way for us to fix it since I can't run this against your DB myself.
+If anything errors, paste the full traceback back into chat - that's the fastest way for us to fix it since I can't run this against your DB myself.
 
 ## Notes
 - `thread_id` should be a stable per-conversation id (e.g. a UUID generated
-  once in the frontend and reused for that chat session) — LangGraph uses it
+  once in the frontend and reused for that chat session) - LangGraph uses it
   to load prior turns from the existing `checkpoints` table.
-- Rows returned by `run_sql_read` are capped at 200 — if a query legitimately
+- Rows returned by `run_sql_read` are capped at 200 - if a query legitimately
   needs more, the agent should aggregate in SQL instead.
 - `WRITABLE_TABLES` in `db.py` is intentionally short (transactions, POs, PO
   lines, receipts). Add to it only if a test case needs another table

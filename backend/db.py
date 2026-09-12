@@ -8,7 +8,7 @@ pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=5, kwargs={"row_factory
 
 # Tables the agent is allowed to know about / query. Deliberately excludes
 # LangGraph's internal persistence tables (checkpoint_*, alembic_version) and
-# auth internals (refresh_tokens, password_hash) — those aren't business data.
+# auth internals (refresh_tokens, password_hash) - those aren't business data.
 BUSINESS_TABLES = [
     "inv_categories",
     "inv_current_stock",
@@ -29,7 +29,7 @@ BUSINESS_TABLES = [
 ]
 
 # Tables the write tool is allowed to touch, and only via INSERT/UPDATE
-# (never DELETE/DROP/TRUNCATE — enforced in tools.py regardless of this list).
+# (never DELETE/DROP/TRUNCATE - enforced in tools.py regardless of this list).
 WRITABLE_TABLES = [
     "inv_transactions",
     "proc_purchase_orders",

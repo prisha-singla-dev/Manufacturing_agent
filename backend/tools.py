@@ -27,7 +27,7 @@ def run_sql_read(query: str) -> str:
     """Run a read-only SELECT query against the manufacturing DB and return
     the results. Only SELECT statements are allowed. Always reference the
     real table/column names from the schema you were given. Results are
-    capped at 200 rows — aggregate or filter in SQL rather than relying on
+    capped at 200 rows - aggregate or filter in SQL rather than relying on
     LIMIT-less full scans."""
     if not _is_safe_select(query):
         return "ERROR: only single SELECT statements are allowed."
@@ -47,7 +47,7 @@ def run_sql_read(query: str) -> str:
 @tool
 def propose_write(sql: str, explanation: str) -> str:
     """Propose a write (INSERT or UPDATE only) to the database. This does
-    NOT execute the write — it stores the proposal and returns a
+    NOT execute the write - it stores the proposal and returns a
     proposal_id. The user must explicitly confirm via a separate step
     before it runs. Only use this for tables the user is clearly asking to
     modify (e.g. recording a new transaction or PO). Never propose
@@ -75,7 +75,7 @@ class ChartSpec(BaseModel):
 class RespondToUser(BaseModel):
     """Call this LAST, once you have everything you need, to deliver the
     final answer to the user. Always call this exactly once to end the turn
-    — never end the turn without calling it."""
+    - never end the turn without calling it."""
     response_type: str = Field(description="'text' | 'table' | 'chart' | 'confirm_write'")
     text: str = Field(description="Natural-language answer, always populated.")
     table: Optional[list[dict]] = Field(default=None, description="Rows for response_type='table'.")

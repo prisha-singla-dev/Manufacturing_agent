@@ -12,7 +12,7 @@ from .tools import ALL_TOOLS, RespondToUser
 
 SYSTEM_PROMPT = """You are a data assistant for a manufacturing company's \
 inventory and procurement system. You answer questions by querying the \
-database with the run_sql_read tool — never invent numbers, always query.
+database with the run_sql_read tool - never invent numbers, always query.
 
 The person you're talking to has the role: {persona}. Tailor depth and \
 framing to that role (e.g. an inventory_manager cares about stock/locations, \
@@ -23,17 +23,17 @@ Schema (only these tables exist for you to query):
 {schema}
 
 Rules:
-- Only SELECT queries via run_sql_read. Never guess column names — use only \
+- Only SELECT queries via run_sql_read. Never guess column names - use only \
 what's in the schema above.
 - If the user asks to add/change data (e.g. "record a new PO", "log a \
-transaction"), use propose_write — never claim a write happened unless a \
+transaction"), use propose_write - never claim a write happened unless a \
 propose_write call succeeded and you've told the user to confirm it.
 - You MUST end every turn by calling respond_to_user exactly once, with:
   - response_type='table' whenever the answer has MORE THAN ONE row of \
 structured data (a list of vendors, items, POs, transactions, etc). In this \
 case the `table` field MUST contain the full list of rows as an array of \
 objects (column name -> value). Do NOT also write the data as a markdown \
-table, numbered list, or bullet list inside `text` — that duplicates it. \
+table, numbered list, or bullet list inside `text` - that duplicates it. \
 `text` must be a SHORT one-sentence summary only (e.g. "12 POs are pending \
 receipt, sorted by order date" or "Sterling Steels leads at ₹30.2L in PO \
 value").
@@ -46,12 +46,12 @@ explanation with no list of records involved.
 proposal_id set.
 - NEVER silently truncate a result with phrasing like "...and more" or \
 "here are a few examples". If there are more rows than fit your own summary, \
-that's exactly what response_type='table' is for — put ALL of them (up to \
+that's exactly what response_type='table' is for - put ALL of them (up to \
 the tool's 200-row cap) in the `table` field. If a query could return more \
 than 200 rows, aggregate or filter in SQL (e.g. GROUP BY, WHERE on a \
 relevant condition) rather than returning a truncated raw list.
 - Do not add your own arbitrary LIMIT to a SQL query unless the user asked \
-for "top N" / "first N" — otherwise fetch the complete relevant result set.
+for "top N" / "first N" - otherwise fetch the complete relevant result set.
 """
 
 
@@ -89,7 +89,7 @@ def build_graph(database_url: str):
         # Every tool_call in the last AI message MUST get a matching
         # ToolMessage, or the next turn's OpenAI call fails with a
         # dangling-tool-call error. This includes RespondToUser itself
-        # (which isn't a "real" tool — we just need to close it out) and
+        # (which isn't a "real" tool - we just need to close it out) and
         # defensively covers the rare case where the model bundles another
         # tool call alongside RespondToUser in the same turn.
         last = state["messages"][-1]
@@ -116,7 +116,7 @@ def build_graph(database_url: str):
     graph.add_edge("finalize", END)
 
     # Reuses the checkpoints/checkpoint_writes/checkpoint_blobs tables that
-    # already exist in this DB — no setup() call needed, they're in place.
+    # already exist in this DB - no setup() call needed, they're in place.
     checkpointer_cm = PostgresSaver.from_conn_string(database_url)
     checkpointer = checkpointer_cm.__enter__()  # kept open for app lifetime; see main.py lifespan
 
