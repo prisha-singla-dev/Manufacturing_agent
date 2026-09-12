@@ -15,7 +15,6 @@ from .db import pool
 
 state = {}
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     state["graph"] = build_graph()
