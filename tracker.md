@@ -24,9 +24,18 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ⏭️ skipped
 - ✅ Reuses existing `checkpoints` tables for persistence
 - ✅ Chart/table response-typing bug — found, fixed, verified
 - ✅ Multi-turn dangling-tool-call bug — found, fixed, verified (5 real queries)
-- ✅ Write-back null-id bug — found (INSERT omitted `id`, which has no DB default on these tables), fixed at both the tool level (propose_write now rejects an INSERT missing `id` with an actionable error) and the prompt level. **Verified — write executed successfully end-to-end via the UI.**
-- ✅ Connection-drop bug — a long-lived single checkpointer connection died against Railway's proxy (`SSL SYSCALL error: EOF detected`), corrupting that thread's history. Fixed by sharing the health-checked connection pool between the checkpointer and the SQL tool. Added a graceful fallback for any future corrupted-thread error (clear message + "New chat" prompt instead of a raw 500).
-- ✅ LangSmith tracing confirmed visually — full waterfall (agent → tool calls → route → final) visible per request, including exact SQL run
+- ✅ Write-back null-id bug — found (INSERT omitted `id`, which has no DB
+  default on these tables), fixed at both the tool level (propose_write now
+  rejects an INSERT missing `id` with an actionable error) and the prompt
+  level. **Verified — write executed successfully end-to-end via the UI.**
+- ✅ Connection-drop bug — a long-lived single checkpointer connection died
+  against Railway's proxy (`SSL SYSCALL error: EOF detected`), corrupting
+  that thread's history. Fixed by sharing the health-checked connection pool
+  between the checkpointer and the SQL tool. Added a graceful fallback for
+  any future corrupted-thread error (clear message + "New chat" prompt
+  instead of a raw 500).
+- ✅ LangSmith tracing confirmed visually — full waterfall (agent → tool
+  calls → route → final) visible per request, including exact SQL run
 
 ## Phase 3 — Response typing + write-back tool
 - ✅ Structured response schema — implemented and verified
@@ -52,17 +61,59 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ⏭️ skipped
   rule resolved the silent failure; now returns a correct answer.
 - ✅ **Self-correction detection gap fixed:** runtime check only caught
   pipe-tables/bullet-dashes, missed numbered lists (`1. ...`, `2. ...`) that
-  `test_queries.py` already caught — brought the two checks in sync. Fix
-  applied, awaiting one more rerun to confirm.
+  `test_queries.py` already caught — brought the two checks in sync.
+  **Verified — full rerun came back 0 flagged, all 11 clean.**
 
-## Phase 6 — Deploy (required, gated on Phase 5 fully green)
-- ⬜ Cloud deploy: backend (Railway or Render)
-- ⬜ Cloud deploy: frontend (Vercel)
-- ⬜ End-to-end smoke test against deployed URLs
+**Phase 5 is fully closed.**
+
+## Phase 6 — Deploy (required)
+- ✅ CORS made configurable via `ALLOWED_ORIGINS` env var (was hardcoded to
+  localhost — would have silently broken the deployed frontend)
+- ✅ `Procfile` added for Railway (`uvicorn main:app --host 0.0.0.0 --port $PORT`)
+- ✅ Cloud deploy: backend (Railway) — live
+- ✅ Cloud deploy: frontend (Vercel) — live
+- ✅ `ALLOWED_ORIGINS` updated with the real Vercel URL — confirmed working (initial "Failed to fetch" was exactly this, now resolved)
+- ✅ End-to-end smoke test against deployed URLs — user confirmed working
+- ✅ **Write guardrail gap found + fixed:** `propose_write` allowed a
+  WHERE-less UPDATE (would silently modify every row in a table) and only
+  showed the confirm card the LLM's paraphrase, not the real SQL. Fixed:
+  UPDATE now requires a WHERE clause targeting a specific `id`; the actual
+  SQL is now shown in the confirm card for full transparency before the
+  user clicks confirm.
+- ✅ **Adversarial test suite run against the deployed backend — clean.**
+  9/9 edge cases (off-topic, prompt-injection, password-hash probe,
+  nonexistent-data, ambiguous, mass-update attempt, delete attempt,
+  empty/garbage input) all handled gracefully — injection deflected,
+  sensitive-data probe flatly refused, mass-update/delete both declined or
+  redirected rather than executed, 0 automated safety issues.
+- ✅ **New markdown-in-text variant found + fixed:** "vendor-wise PO value"
+  came back with a raw ` ```json ` code block dumped into `text` — a new
+  disguise of the same non-determinism bug, undetected by both the test
+  script and the live self-correction check (neither recognized code
+  fences/JSON, only pipe-tables/lists). Widened both detectors to catch it
+  — **this variant would have shipped raw JSON to a real user in
+  production before the fix.**
+- ⏭️ **Accepted minor inconsistency:** "stock value by location" (5 rows)
+  occasionally renders as a numbered list even after 2 self-correction
+  retries. Readable either way at this row count — not chasing further
+  prompt tuning against inherent LLM non-determinism past this point.
 - ⬜ Authentication — BONUS, optional, does not block deploy
+
+**Phase 6 is functionally complete** pending one more rerun to confirm the JSON-in-text fix.
 
 ---
 ## Decisions log (running, most recent first)
+- 2026-09-12 — Both backend (Railway) and frontend (Vercel) deployed and
+  confirmed working end-to-end. Found + fixed a real write-guardrail gap:
+  UPDATE now requires a WHERE clause on a specific id; confirm card now
+  shows the actual SQL, not just the LLM's paraphrase. Added an adversarial
+  test suite (off-topic, injection, sensitive-data probe, guardrail-bypass
+  attempts) to run before treating this as client-ready.
+- 2026-09-12 — No access to the client's Railway project (only the DB
+  connection string was provided) — backend deploys to a new Railway project
+  under her own account instead. Functionally identical: the DB connection
+  is just an outbound connection via the existing public `DATABASE_URL`,
+  independent of which Railway project/account makes it.
 - 2026-09-12 — Test #11 (write-back) fully verified end-to-end — test
   transaction proposed, confirmed, and executed successfully via the UI.
 - 2026-09-12 — Connection-drop bug fixed: checkpointer now shares the

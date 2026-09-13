@@ -64,8 +64,14 @@ def check_anomalies(resp: dict) -> list[str]:
     text = (resp.get("text") or "").lower()
     rtype = resp.get("response_type")
 
-    if rtype == "text" and ("|---" in text or text.count("\n|") > 1 or text.count("\n1.") > 0):
-        issues.append("possible markdown/list-in-text regression (should be response_type=table)")
+    if rtype == "text" and (
+        "|---" in text
+        or text.count("\n|") > 1
+        or text.count("\n1.") > 0
+        or "```" in text
+        or text.count('{"') > 1
+    ):
+        issues.append("possible markdown/list/JSON-in-text regression (should be response_type=table)")
 
     if any(p in text for p in TRUNCATION_PHRASES):
         issues.append(f"possible silent truncation language in text: {text[:80]!r}")

@@ -53,7 +53,14 @@ class ChatResponse(BaseModel):
 
 def _looks_like_markdown_table(text: str) -> bool:
     t = (text or "").lower()
-    return t.count("\n|") > 1 or "|---" in t or t.count("\n-") > 3 or t.count("\n1.") > 0
+    return (
+        t.count("\n|") > 1
+        or "|---" in t
+        or t.count("\n-") > 3
+        or t.count("\n1.") > 0
+        or "```" in t
+        or t.count('{"') > 1
+    )
 
 
 @app.post("/chat", response_model=ChatResponse)
