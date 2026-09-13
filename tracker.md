@@ -86,18 +86,23 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ⏭️ skipped
   empty/garbage input) all handled gracefully — injection deflected,
   sensitive-data probe flatly refused, mass-update/delete both declined or
   redirected rather than executed, 0 automated safety issues.
-- ✅ **New markdown-in-text variant found + fixed:** "vendor-wise PO value"
-  came back with a raw ` ```json ` code block dumped into `text` — a new
-  disguise of the same non-determinism bug, undetected by both the test
-  script and the live self-correction check (neither recognized code
-  fences/JSON, only pipe-tables/lists). Widened both detectors to catch it
-  — **this variant would have shipped raw JSON to a real user in
-  production before the fix.**
+- 🔄 **JSON-code-fence fix applied but NOT yet confirmed live:** rerun
+  against production showed the exact same word-for-word response as
+  before the fix, which strongly suggests the updated `main.py` wasn't
+  redeployed before that test ran, rather than the fix being ineffective.
+  Needs one more redeploy + targeted retest of this one query to confirm.
 - ⏭️ **Accepted minor inconsistency:** "stock value by location" (5 rows)
   occasionally renders as a numbered list even after 2 self-correction
   retries. Readable either way at this row count — not chasing further
   prompt tuning against inherent LLM non-determinism past this point.
 - ⬜ Authentication — BONUS, optional, does not block deploy
+
+## Submission
+- **App:** https://manufacturing-agent-delta.vercel.app/
+- **API:** https://manufacturingagent-production.up.railway.app/
+- Submitted late — production issues found via real-DB testing (not present
+  against a mock) took priority over the deadline. See `info.md` for the
+  full list of root causes and fixes.
 
 **Phase 6 is functionally complete** pending one more rerun to confirm the JSON-in-text fix.
 
