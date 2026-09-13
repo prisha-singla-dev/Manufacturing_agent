@@ -7,8 +7,8 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, AIMessage, ToolMessage
 
-from .db import get_schema_description, pool
-from .tools import ALL_TOOLS, RespondToUser
+from db import get_schema_description, pool
+from tools import ALL_TOOLS, RespondToUser
 
 SYSTEM_PROMPT = """You are a data assistant for a manufacturing company's \
 inventory and procurement system. You answer questions by querying the \

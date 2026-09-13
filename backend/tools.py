@@ -4,7 +4,7 @@ from typing import Optional
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from .db import pool, BUSINESS_TABLES, WRITABLE_TABLES
+from db import pool, BUSINESS_TABLES, WRITABLE_TABLES
 
 # In-memory store for proposed writes awaiting user confirmation.
 # Fine for a single-process dev/demo deployment; swap for Redis/DB if this
