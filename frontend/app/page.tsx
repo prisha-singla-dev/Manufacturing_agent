@@ -165,7 +165,7 @@ export default function Page() {
               {m.data?.response_type === "table" && m.data.table && <TableRenderer rows={m.data.table} />}
               {m.data?.response_type === "chart" && m.data.chart && <ChartRenderer chart={m.data.chart} />}
               {m.data?.response_type === "confirm_write" && m.data.proposal_id && (
-                <ConfirmWrite proposalId={m.data.proposal_id} text={m.data.text} />
+                <ConfirmWrite proposalId={m.data.proposal_id} text={m.data.text} sql={m.data.proposal_sql} />
               )}
             </div>
           </div>

@@ -6,6 +6,7 @@ export type ChatResponse = {
   table: Record<string, any>[] | null;
   chart: { chart_type: string; x_key: string; y_key: string; data: Record<string, any>[] } | null;
   proposal_id: string | null;
+  proposal_sql: string | null;
 };
 
 export async function sendMessage(message: string, persona: string, threadId: string): Promise<ChatResponse> {

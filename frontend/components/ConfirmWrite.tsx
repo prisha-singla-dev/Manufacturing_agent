@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { confirmWrite } from "@/lib/api";
 
-export default function ConfirmWrite({ proposalId, text }: { proposalId: string; text: string }) {
+export default function ConfirmWrite({
+  proposalId,
+  text,
+  sql,
+}: {
+  proposalId: string;
+  text: string;
+  sql?: string | null;
+}) {
   const [status, setStatus] = useState<"pending" | "confirming" | "done" | "error">("pending");
   const [resultMsg, setResultMsg] = useState("");
 
@@ -22,6 +30,11 @@ export default function ConfirmWrite({ proposalId, text }: { proposalId: string;
   return (
     <div className="mt-2 border-2 border-amber-400 bg-amber-50 rounded-lg p-3">
       <p className="text-sm text-amber-900 mb-2">⚠️ This will write to the database: {text}</p>
+      {sql && (
+        <pre className="text-xs font-mono-data bg-white border border-amber-200 rounded p-2 mb-2 overflow-x-auto whitespace-pre-wrap">
+          {sql}
+        </pre>
+      )}
       {status === "pending" && (
         <button
           onClick={handleConfirm}

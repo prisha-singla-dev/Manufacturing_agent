@@ -48,6 +48,7 @@ class ChatResponse(BaseModel):
     table: list[dict] | None = None
     chart: dict | None = None
     proposal_id: str | None = None
+    proposal_sql: str | None = None
 
 
 def _looks_like_markdown_table(text: str) -> bool:
@@ -105,7 +106,12 @@ async def chat(req: ChatRequest):
         )
         final = retry_result.get("final") or final
 
-    return ChatResponse(**final)
+    response = ChatResponse(**final)
+    if response.response_type == "confirm_write" and response.proposal_id:
+        pending = PENDING_WRITES.get(response.proposal_id)
+        if pending:
+            response.proposal_sql = pending["sql"]
+    return response
 
 
 @app.post("/confirm-write/{proposal_id}")

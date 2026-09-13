@@ -78,6 +78,22 @@ def propose_write(sql: str, explanation: str) -> str:
                 "first column and `gen_random_uuid()::text` as its value."
             )
 
+    if s.startswith("update"):
+        if " where " not in f" {s} ":
+            return (
+                "ERROR: UPDATE must include a WHERE clause. A WHERE-less "
+                "UPDATE would modify every row in the table, which is never "
+                "intended — retry targeting the specific row(s) by id."
+            )
+        where_clause = s.split(" where ", 1)[1]
+        if "id" not in where_clause and "id =" not in where_clause:
+            return (
+                "ERROR: UPDATE's WHERE clause should target a specific `id` "
+                "— a condition on a non-unique column (like a name or "
+                "status) could match more rows than intended. Retry with "
+                "WHERE id = '<the specific row's id>'."
+            )
+
     proposal_id = str(uuid.uuid4())
     PENDING_WRITES[proposal_id] = {"sql": sql, "explanation": explanation}
     return f"PROPOSED: proposal_id={proposal_id}. Tell the user what will happen and that they must confirm it before it runs."
