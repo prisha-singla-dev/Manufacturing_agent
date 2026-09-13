@@ -8,9 +8,10 @@ from dotenv import load_dotenv
 from openai import BadRequestError
 
 load_dotenv(Path(__file__).with_name(".env"))
-from backend.agent import build_graph
-from backend.tools import PENDING_WRITES
-from backend.db import pool
+
+from agent import build_graph
+from tools import PENDING_WRITES
+from db import pool
 
 state = {}
 
